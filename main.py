@@ -4,6 +4,7 @@ import os
 
 def nettoyer_ecran():
     os.system('cls' if os.name == 'nt' else 'clear')
+    # clear l'écran avec l'os
 
 def afficher_plateau(plateau):
     nettoyer_ecran()
@@ -42,7 +43,7 @@ def ordinateur(board, signe):
         (0, 4, 8), (2, 4, 6)
     ]
 
-    # 1. ESSAYER DE GAGNER
+    # 1. ESSAYER DE FAIRE UNE LIGNE
     for a, b, c in combos:
         ligne = [board[a], board[b], board[c]]
         if ligne.count(signe) == 2 and ligne.count(" ") == 1:
