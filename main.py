@@ -3,12 +3,12 @@ import random
 import os
 
 def nettoyer_ecran():
-    os.system('cls' if os.name == 'nt' else 'clear')
-    # clear l'écran avec l'os
+    os.system('cls')
 
 def afficher_plateau(plateau):
     nettoyer_ecran()
-    print("\n--- TIC TAC TOE ---\n")
+    print("\n--TICTACTOE--\n")
+    # Affiche les 3 lignes
     for row in range(3):
         offset = row * 3
         ligne = f" {plateau[offset]} | {plateau[offset+1]} | {plateau[offset+2]} "
@@ -23,16 +23,12 @@ def verifier_victoire(plateau, symbole):
         (0, 3, 6), (1, 4, 7), (2, 5, 8),
         (0, 4, 8), (2, 4, 6)
     ]
-    for a, b, c in combos:
-        if plateau[a] == plateau[b] == plateau[c] == symbole:
-            return True
-    return False
+    return any(plateau[a] == plateau[b] == plateau[c] == symbole for a, b, c in combos)
 
 def grille_pleine(plateau):
     return " " not in plateau
 
 def ordinateur(board, signe):
-    print("\nL'ordinateur réfléchit...")
     time.sleep(1)
     
     adversaire = "X" if signe == "O" else "O"
@@ -42,18 +38,25 @@ def ordinateur(board, signe):
         (0, 3, 6), (1, 4, 7), (2, 5, 8),
         (0, 4, 8), (2, 4, 6)
     ]
+    
+    # Cherche le premier mouvement valide selon les priorités
+    def ai_coup(symbole_cible):
+        for a, b, c in combos:
+            ligne = [board[a], board[b], board[c]]
+            if ligne.count(symbole_cible) == 2 and ligne.count(" ") == 1:
+                # Retourne l'index de la case vide dans la combinaison
+                return [a, b, c][ligne.index(" ")]
+        return None
 
-    # 1. ESSAYER DE FAIRE UNE LIGNE
-    for a, b, c in combos:
-        ligne = [board[a], board[b], board[c]]
-        if ligne.count(signe) == 2 and ligne.count(" ") == 1:
-            return [a, b, c][ligne.index(" ")]
+    # 1. ESSAYER DE GAGNER (Priorité maximale)
+    coup = ai_coup(signe)
+    if coup is not None:
+        return coup
 
     # 2. BLOQUER LE JOUEUR
-    for a, b, c in combos:
-        ligne = [board[a], board[b], board[c]]
-        if ligne.count(adversaire) == 2 and ligne.count(" ") == 1:
-            return [a, b, c][ligne.index(" ")]
+    coup = ai_coup(adversaire)
+    if coup is not None:
+        return coup
 
     # 3. PRENDRE LE CENTRE
     if board[4] == " ":
@@ -67,27 +70,26 @@ def ordinateur(board, signe):
 
     # 5. SINON, JOUER AU HASARD
     cases_vides = [i for i, x in enumerate(board) if x == " "]
-    if cases_vides:
-        return random.choice(cases_vides)
-    
-    return False
+    return random.choice(cases_vides) if cases_vides else False
 
-def tour_humain(plateau, joueur_actuel):
+def tour_humain(plateau, joueur_symbole):
     valide = False
     while not valide:
         try:
-            coup = int(input(f"\n{joueur_actuel}, choisissez une case (1-9) : "))
+            # Demande la case (1-9)
+            coup = int(input(f"\n({joueur_symbole}), choisissez une case (1-9) : "))
+            
             if 1 <= coup <= 9:
+                # Vérifie si la case est vide (index 0-8)
                 if plateau[coup - 1] == " ":
-                    symbole = "X" if joueur_actuel == "Joueur 1" else "O"
-                    plateau[coup - 1] = symbole
+                    plateau[coup - 1] = joueur_symbole
                     valide = True
                 else:
-                    print(">> Cette case est déjà occupée !")
+                    print("Cette case est déjà occupée !")
             else:
-                print(">> Saisissez un nombre entre 1 et 9.")
+                print("Saisissez un nombre entre 1 et 9.")
         except ValueError:
-            print(">> Erreur : Veuillez entrer un chiffre.")
+            print("Erreur : Veuillez entrer un chiffre.")
 
 if __name__ == "__main__":
     while True:
@@ -97,45 +99,55 @@ if __name__ == "__main__":
         nettoyer_ecran()
         print("1. Un Joueur (vs IA)")
         print("2. Deux Joueurs")
-        choix = input("\nVotre choix : ")
+        choix_mode = input("\nVotre choix : ")
         
-        mode_ia = (choix == "1")
-        adversaire = "Ordinateur" if mode_ia else "Joueur 2"
-        joueur_actuel = random.choice(["Joueur 1", adversaire])
+        mode_ia = (choix_mode == "1")
         
-        print(f"\nLe sort a décidé : c'est {joueur_actuel} qui commence !")
+        # Simplification de la gestion des joueurs
+        if mode_ia:
+            joueurs = {"X": "Joueur 1", "O": "Ordinateur"}
+        else:
+            joueurs = {"X": "Joueur 1", "O": "Joueur 2"}
+        
+        # Le symbole qui commence (X ou O)
+        symbole_actuel = random.choice(["X", "O"])
+        
+        print(f"\nLe sort a décidé : c'est {joueurs[symbole_actuel]} ({symbole_actuel}) qui commence !")
         time.sleep(2)
         
+        # --- BOUCLE DE JEU PRINCIPALE ---
         while running:
             afficher_plateau(plateau)
+            nom_joueur = joueurs[symbole_actuel]
 
-            if mode_ia and joueur_actuel == "Ordinateur":
+            # 1. JEU
+            if mode_ia and symbole_actuel == "O":
+                # Tour de l'ordinateur
                 coup_ia = ordinateur(plateau, "O")
                 if coup_ia is not False:
                     plateau[coup_ia] = "O"
                 else:
                     running = False 
             else:
-                tour_humain(plateau, joueur_actuel)
+                # Tour de l'humain (Joueur 1 ou Joueur 2)
+                tour_humain(plateau, symbole_actuel)
 
-            symbole_actuel = "O" if joueur_actuel == "Ordinateur" or joueur_actuel == "Joueur 2" else "X"
-            
+            # 2. VÉRIFICATION
             if verifier_victoire(plateau, symbole_actuel):
                 afficher_plateau(plateau)
-                print(f"\n>>> VICTOIRE ! {joueur_actuel} a gagné ! <<<")
+                print(f"\n VICTOIRE ! {nom_joueur} ({symbole_actuel}) a gagné !")
                 running = False
             
             elif grille_pleine(plateau):
                 afficher_plateau(plateau)
-                print("\n>>> Match Nul ! Aucune case disponible. <<<")
+                print("\n Match Nul ! Aucune case disponible.")
                 running = False
             
             else:
-                if mode_ia:
-                    joueur_actuel = "Ordinateur" if joueur_actuel == "Joueur 1" else "Joueur 1"
-                else:
-                    joueur_actuel = "Joueur 2" if joueur_actuel == "Joueur 1" else "Joueur 1"
+                # 3. CHANGEMENT DE JOUEUR
+                symbole_actuel = "O" if symbole_actuel == "X" else "X"
         
+        # Rejouer
         replay = input("\nVoulez-vous rejouer ? (oui/non) : ").lower()
         if replay not in ["oui", "o", "yes", "y"]:
             print("Au revoir !")
